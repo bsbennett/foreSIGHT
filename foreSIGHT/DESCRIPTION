@@ -1,0 +1,13 @@
+Package: foreSIGHT
+Version: 0.9.0
+Depends: GA, zoo 
+Imports: doParallel, ggplot2, directlabels,cowplot, stats, graphics, grDevices, utils
+Title: An R-Package to Support Scenario-Neutral Climate Impact Assessments
+Authors@R: c(person("Bree", "Bennett", role=c("aut","cre"),email="bree.bennett@adelaide.edu.au"),person("Sam", "Culley", role=c("aut"),email="sam.culley@adelaide.edu.au"),person("Danlu", "Guo", role=("ctb"), email="danlu.guo@adelaide.edu.au"))
+Author: Bree Bennett [aut, cre],
+	Sam Culley [aut],
+	Danlu Guo [ctb]
+Maintainer: Bree Bennett <bree.bennett@adelaide.edu.au>
+Description: A package to create climate scenarios, stress test systems and visualise performance in scenario-neutral climate change impact assessments.
+License: GPL-3
+NeedsCompilation: yes

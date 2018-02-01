@@ -1,0 +1,33 @@
+export(scenarioGenerator)
+export(attributeCalculator)
+export(performanceSpaces)
+export(plotLayers)
+export(quickSpace)
+export(exSpArgsVisual)
+
+import(GA)
+import(zoo)
+import(doParallel)
+
+importFrom(cowplot,ggsave)
+importFrom(cowplot,ggdraw)
+importFrom(cowplot,draw_label)
+importFrom(cowplot,plot_grid)
+importFrom(cowplot,save_plot)
+
+import(ggplot2)
+
+
+importFrom(directlabels,geom_dl)
+
+importFrom("grDevices", "adjustcolor", "col2rgb", "contourLines",
+             "dev.off", "pdf", "rgb")
+importFrom("graphics", "axis", "barplot", "boxplot", "bxp", "legend",
+             "lines", "mtext", "par", "polygon", "text", "title")
+importFrom("stats", "loess", "median", "predict", "quantile", "rgamma",
+             "runif", "sd")
+importFrom("utils", "modifyList", "read.table", "write.table")
+
+
+useDynLib(foreSIGHT)
+
