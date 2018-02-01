@@ -5,7 +5,7 @@ install.packages(c("GA","doParallel","ggplot2","cowplot","directlabels","zoo"))
 
 The foreSIGHT package can then be installed from a local zip file. If using RStudio, look for ‘Install Packages’ option on the ‘Tools’ menu and select ‘Package Archive File’. If using the standard R graphical interface, look for ‘Install packages from local files’ from the ‘Packages’ menu. Alternatively, the command below can be used. Make sure to give the full path to the file:
 
-install.packages("C:\\pathtofile\\foreSIGHT_0.9.tar.gz")
+install.packages("C:\\pathtofile\\foreSIGHT_0.9.0.tar.gz")
 
 You can then load the package with the following command:
 
