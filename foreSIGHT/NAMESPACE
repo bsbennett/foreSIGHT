@@ -8,6 +8,7 @@ export(tankWrapper)
 export(tankPerformance)
 export(modCalibrator)
 export(modSimulator)
+export(devScenarioClean)
 
 import(GA)
 import(zoo)
