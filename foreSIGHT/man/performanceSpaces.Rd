@@ -10,7 +10,7 @@ performanceSpaces(data = NULL,
                   systemArgs = NULL,
                   simDirectory = "Simulation1",
                   performance=NULL,
-                  IOmode="verbose"
+                  IOmode="suppress"
                   )
 }
 
@@ -43,56 +43,85 @@ performanceSpaces(data = NULL,
 \seealso{See Also: \code{\link{scenarioGenerator}} and \code{\link{plotLayers}}}
 
 \examples{
-data(ScaledSpace)                  ###Load data to visualise
+\dontrun{
+data(tankSimpleScale)
 
-###Heat Map Example
-result<-performanceSpaces(data=out,
-                  plotTag = "Heat",
-                  plotArgs=plotArgs,
-                  systemModel = tankWrapper,
-                  systemArgs = systemArgs)
+# tank_simple_scenarios<-scenarioGenerator(obs=tank_obs,                     
+#                           modelTag = modelTag,
+#                           attPerturb=attPerturb,
+#                           exSpArgs = exSpArgs)
 
-result$plot                         ### Plot Heat map
+# Example 1: Heat Map Example
+systemArgs<-list(roofArea=100,
+                 nPeople=1,
+                 tankVol=2000,
+                 firstFlush=1,
+                 write.file=FALSE,
+                 metric="reliability")
 
-###Example 2
-plotArgs$contour=FALSE
-plotArgs$lowfill="antiquewhite"   ###From supported R colour names
-plotArgs$highfill="#88CCEE"       ###Hexidecimal specification also okay
+plotArgs=list(title="Scenario Neutral Space",
+               legendtitle="Reliability",
+               xlim=c(-2,2),
+               ylim=c(0.7,1.3),
+               performancelimits=c(0.6,0.85))
 
-result<-performanceSpaces(data=out,
-                  plotTag = "Heat",
-                  plotArgs=plotArgs,
-                  systemModel = tankWrapper,
-                  systemArgs = systemArgs)
+plot<-performanceSpaces(data=tank_simple_scenarios,
+                        plotTag="Heat",
+                        systemModel = tankWrapper,
+                        systemArgs = systemArgs)
+
+plot$plot
+
+# Note options
+# plotArgs$contour=FALSE
+# plotArgs$lowfill="antiquewhite"   ###From supported R colour names
+# plotArgs$highfill="#88CCEE"       ###Hexidecimal specification also okay
+}
+
+\dontrun{
+#Example 2
+result<-performanceSpaces(data=tank_simple_scenarios,
+                          plotTag = "Contours",
+                          plotArgs=plotArgs,
+                          systemModel = tankWrapper,
+                          systemArgs = systemArgs)
 
 result$plot
-
-###Example 3
-result<-performanceSpaces(data=out,
-                  plotTag = "Contours",
-                  plotArgs=plotArgs,
-                  systemModel = tankWrapper,
-                  systemArgs = systemArgs)
-
-result$plot
-
-###Example 4
+}
+#Example 3
+\dontrun{
 plotArgs$contourlevels=c(0.67,0.71)
 
-result<-performanceSpaces(data=out,
-                  plotTag = "Contours",
-                  plotArgs=plotArgs,
-                  systemModel = tankWrapper,
-                  systemArgs = systemArgs)
+result<-performanceSpaces(data=tank_simple_scenarios,
+                          plotTag = "Contours",
+                          plotArgs=plotArgs,
+                          systemModel = tankWrapper,
+                          systemArgs = systemArgs)
 
 result$plot
+}
 
-###Example 5 - One-at-a-time/"OAT" plot
-data(externaloat)
+\dontrun{
+###Example 4 - One-at-a-time/"OAT" plot
+data(oatScenarios)
+systemArgs=list(roofArea=50,
+                 nPeople=1,
+                 tankVol=3000,
+                 firstFlush=1,
+                 write.file=FALSE,
+                 metric="reliability")
 
-performanceSpaces(data=out,
-                  plotTag = "OAT",
-                  plotArgs=plotArgs,
-                  systemModel = tankWrapper,
-                  systemArgs = systemArgs)
+plotArgs=list(title="Scenario Neutral Space",
+               legendtitle="Reliability",
+               xlim=c(-2,2),
+               ylim=c(0.7,1.3),
+               performancelimits=c(0.6,0.85))
+
+oat_plot=performanceSpaces(data=oat_out,
+                           plotTag = "OAT",
+                           plotArgs=plotArgs,
+                           systemModel = tankWrapper,
+                           systemArgs = systemArgs)
+oat_plot
+}
 }

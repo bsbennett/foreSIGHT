@@ -330,7 +330,7 @@ trafficAttPlot<-function(attSel=NULL,
       plot.attrib.perf.solo(rel.diff=mdiff$diff.att,
                             att.name=attSel[indPrim[i]],
                             perf.lim=mdiff$class.lim,
-                            prim.lab="Primary",
+                            prim.lab="Perturbed",
                             targetType=targetType[indPrim[i]])
        
     }

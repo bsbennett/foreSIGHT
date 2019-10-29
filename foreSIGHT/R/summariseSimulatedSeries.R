@@ -71,6 +71,9 @@ plotSummary<-function(obs=NULL,
       trafficAttPlot(attSel=attSel,attPrim=attPrim,simPt=simTarget[i,],target=target[i,],targetType=targetType)
     }
     
+    #ADD ADDITIONAL TRAFFIC LIGHT PANELS FOR REMAINING INFORMATION (SMALLER IN SIZE..., for eacg simVar set)
+    
+    
     #SET LAYOUT - 2 ROWS, 1 COLUMN
     par(mfrow=c(2,1),xaxs="i")
     par(mar=c(3,5,3,3),oma=c(3,5,3,3),xpd=FALSE)

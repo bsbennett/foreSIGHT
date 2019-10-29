@@ -3,55 +3,120 @@
 
 #FORTRAN FUNCS
 R10calc <- function(x) {
-  n=length(x)
-  out <- .Fortran("R10calc",
-                  x=as.double(x),y=0,n=as.integer(n),package="foreSIGHT")
-  
-  return(out$y)
-}
+  temp=get.nwet(data=x,threshold=10)
+  return(temp)
+  }
+# R10calc <- function(x) {
+#   n=length(x)
+#   out <- .Fortran("R10calc",
+#                   x=as.double(x),y=0,n=as.integer(n),package="foreSIGHT")
+#   
+#   return(out$y)
+# }
 
 
-CDDcalc <- function(x) {
-  x[x!=0]=1
-  n=length(x)
-  out <- .Fortran("CDDcalc",
-                  x=as.double(x),y=0,n=as.integer(n),package="foreSIGHT")
-  return(out$y)
-}
+# CDDcalc <- function(x) {
+#   x[x!=0]=1
+#   n=length(x)
+#   out <- .Fortran("CDDcalc",
+#                   x=as.double(x),y=0,n=as.integer(n),package="foreSIGHT")
+#   return(out$y)
+# }
+# 
+# 
+# CDWcalc <- function(x) {
+#   x[x!=0]=1
+#   n=length(x)
+#   out <- .Fortran("CDWcalc",
+#                   x=as.double(x),y=0,n=as.integer(n),package="foreSIGHT")
+#   return(out$y)
+# }
 
 
-CDWcalc <- function(x) {
-  x[x!=0]=1
-  n=length(x)
-  out <- .Fortran("CDWcalc",
-                  x=as.double(x),y=0,n=as.integer(n),package="foreSIGHT")
-  return(out$y)
-}
 
-
+# F0calc <- function(x) {
+#   n=length(x)
+#   out <- .Fortran("F0calc",
+#                   x=as.double(x),y=0,n=as.integer(n),package="foreSIGHT")
+#   return(out$y)
+# }
 
 F0calc <- function(x) {
+    temp=get.below(data=x,threshold=0)
+    return(temp)
+}
+  
+# GSLcalc <- function(x) {
+#   n=length(x)
+#   out <- .Fortran("GSLcalc",
+#                   x=as.double(x),y=0,n=as.integer(n),package="foreSIGHT")
+#   
+#   return(out$y)
+# }
+# 
+# CSLcalc <- function(x) {
+#   n=length(x)
+#   out <- .Fortran("CSLcalc",
+#                   x=as.double(x),y=0,n=as.integer(n),package="foreSIGHT")
+#   
+#   return(out$y)
+# }
+
+#CSL CALCULATION
+CSLcalc<-function(x){
   n=length(x)
-  out <- .Fortran("F0calc",
-                  x=as.double(x),y=0,n=as.integer(n),package="foreSIGHT")
-  return(out$y)
+  m=n*1
+  half=floor((m/2.0)-1.0)
+  len=n-5.0
+  sum=sum2=0
+  
+  for(i in 6:half){
+    if((length(which(x[(i-5):i]<17)))==6){
+      sum=half-i
+      next
+    }
+  }
+  
+  for(i in (half+1):len){
+    if((length(which(x[(i):(i+5)]>17)))==6){
+      sum2=i-(half+1)
+      next
+    }
+  }
+  y=sum+sum2
+  return(y)
 }
 
-GSLcalc <- function(x) {
+
+# dat=c(rep(20,10),rep(0,10),rep(20,10))
+# CSLcalc(x=dat,n=length(dat))
+
+GSLcalc<-function(x){
   n=length(x)
-  out <- .Fortran("GSLcalc",
-                  x=as.double(x),y=0,n=as.integer(n),package="foreSIGHT")
+  m=n*1
+  half=floor((m/2.0)-1.0)
+  len=n-5.0
+  sum=sum2=0
   
-  return(out$y)
+  for(i in 6:half){
+    if((length(which(x[(i-5):i]>5)))==6){
+      sum=half-i
+      next
+    }
+  }
+  
+  for(i in (half+1):len){
+    if((length(which(x[(i):(i+5)]<5)))==6){
+      sum2=i-(half+1)
+      next
+    }
+  }
+  y=sum+sum2
+  return(y)
 }
 
-CSLcalc <- function(x) {
-  n=length(x)
-  out <- .Fortran("CSLcalc",
-                  x=as.double(x),y=0,n=as.integer(n),package="foreSIGHT")
-  
-  return(out$y)
-}
+# dat=c(rep(20,10),rep(0,10),rep(20,10))
+# GSLcalc(x=dat,n=length(dat))
 
 
 
@@ -191,6 +256,13 @@ get.nwet=function(data=NULL,threshold=NULL){
   return(temp)
 }
 
+#FUNCTION TO DETERMINE NUMBER OF INSTANCES Below A THRESHOLD - nwet
+get.below=function(data=NULL,threshold=NULL){
+  temp=length(which(data<threshold))
+  if(identical(temp,integer(0))){temp=0}
+  return(temp)
+}
+
 #FUNCTION TO EXTRACT ALL AMOUNTS ABOVE A THRESHOLD
 get.wet.amounts=function(data=NULL,threshold=NULL){
   temp=data[which(data>threshold)]
@@ -295,7 +367,7 @@ get.quantile.wet=function(data=NULL,  #vector
 #skewness on wet days
 get.wet.skewness=function(data=NULL,threshold=NULL){
   temp=data[which(data>threshold)]
-  temp=skewness(x=temp)
+  temp=moments::skewness(x=temp)
   return(temp)
 }
 
@@ -352,6 +424,14 @@ get.spell.lengths<-function(data=NULL,  # vector of rain
          },
          -999.00)
   return(spell.len)
+}
+
+get.spell.lengths.max<-function(data=NULL,  # vector of rain
+                            thresh=NULL,  # wetness threshold, all values below or equal to deemed dry
+                            type="wet"    # get wet or dry spell length
+){
+  temp=max(get.spell.lengths(data=data,thresh=thresh,type=type),na.rm=TRUE)
+  temp
 }
 
 # series=c(0.5,0.5,0.5,0.01,0.01,0.01,0.8,0.5,0.5,0.5,0,0,0,2,2,0,2)

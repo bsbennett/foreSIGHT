@@ -4,18 +4,26 @@ export(performanceSpaces)
 export(plotLayers)
 export(quickSpace)
 export(exSpArgsVisual)
+export(tankWrapper)
+export(tankPerformance)
+export(modCalibrator)
+export(modSimulator)
 
 import(GA)
 import(zoo)
 import(doParallel)
 
-importFrom(cowplot,ggsave)
 importFrom(cowplot,ggdraw)
 importFrom(cowplot,draw_label)
 importFrom(cowplot,plot_grid)
 importFrom(cowplot,save_plot)
 
-import(ggplot2)
+importFrom("ggplot2","aes","coord_cartesian","element_blank",
+             "element_rect","element_text","geom_line","geom_point",
+             "geom_text","geom_tile","ggplot","guide_colorbar",
+             "guides","margin","scale_colour_continuous","scale_color_continuous","scale_fill_continuous",
+             "scale_fill_gradient","scale_x_continuous","scale_y_continuous",
+             "stat_contour","theme","unit","xlab","xlim","ylab","ylim","stat")
 
 
 importFrom(directlabels,geom_dl)
@@ -25,9 +33,10 @@ importFrom("grDevices", "adjustcolor", "col2rgb", "contourLines",
 importFrom("graphics", "axis", "barplot", "boxplot", "bxp", "legend",
              "lines", "mtext", "par", "polygon", "text", "title")
 importFrom("stats", "loess", "median", "predict", "quantile", "rgamma",
-             "runif", "sd")
-importFrom("utils", "modifyList", "read.table", "write.table")
+             "runif", "sd", "rnorm","acf","na.pass")
+importFrom("utils", "modifyList", "read.table", "write.table", "write.csv")
+
+importFrom("moments","skewness")
 
 
-useDynLib(foreSIGHT)
 

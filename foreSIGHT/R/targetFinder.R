@@ -51,6 +51,7 @@ targetFinder<- function(parS,               # vector of pars (will change in opt
     #GET OBJECTIVE FUNCTION VALUE ()
     score=objFuncMC(attSel= attSel,     # vector of selected attributes 
                     attPrim=attPrim,      # any primary attributes
+                    attInfo=attInfo,
                     simPt=simPt,
                     target=target,
                     penalty.func=penaltyFunc_basic,   #make this changeable (auto calc lambda)

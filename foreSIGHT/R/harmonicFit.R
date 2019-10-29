@@ -104,7 +104,10 @@ fit.harmonic.opts<-function(nperiod=NULL,    # no. of periods
 calc.phase.ang<-function(aa,     
                          bb
 ){
-  if(aa>0){ang=atan(bb/aa)}
+  if(aa>0){
+    ang=atan(bb/aa)
+    if(ang<0){ang=ang+pi}    #make positive if less than zero by adding pi
+  }
   if(aa<0){
     angA=atan(bb/aa)+pi; angB=atan(bb/aa)-pi
     tmp=c(angA,angB)

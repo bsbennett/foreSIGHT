@@ -3,6 +3,7 @@
 ################################
 
 #CONTAINS
+  #get.multi.model.info() - get modle info for multiple modelTags
   #get.model.info() - based on model tag gets general model information (e.g. nperiods in a year, no. harmonic cycles fitted)
   #par.manager() - based on model tag converts input vector of pars into pdd, pwd, alpha & beta vectors of nperiod length
   #init.calib() - initial calibration function. Uses obs data to fit model to baseline climate.
@@ -11,8 +12,22 @@
     #pdd.pwd.estimator() -args (dat,ind,threshold)
   #simHarTS.parmanager() - based on model tag converts input vector of pars into cor0, cor1, Hmean, Hsd vectors of period length
   #whichPars
+  #update.simPriority() -update modelTag via simPriority
 #-------------------------------------------------------------------------------------------------------------
-get.model.info<-function(modelTag=NULL #string used to specify model for stochastic generation
+#Get info for multiple models
+ get.multi.model.info<-function(modelTag=NULL){
+   nMod=length(modelTag)   
+   if(nMod==1){
+     modelInfo=list()
+     modelInfo[[modelTag[1]]]=get.model.info(modelTag[1])                     #even if 1 model still stored in list format
+   }else{
+     modelInfo=sapply(X = modelTag,FUN=get.model.info,USE.NAMES=TRUE)
+   }
+   return(modelInfo)
+ }
+ 
+#Get info for individual models
+ get.model.info<-function(modelTag=NULL #string used to specify model for stochastic generation
   ){
   
   modelInfo=list()
@@ -85,6 +100,25 @@ get.model.info<-function(modelTag=NULL #string used to specify model for stochas
                                                 0.950, 0.200, 4.110,
                                                 15.00, 6.50, 1.350)
                          },
+         "P-har12-wgen-FS" = {modelInfo$simVar="P"
+                              modelInfo$simPriority=1
+                              modelInfo$nperiod=12
+                              modelInfo$fixedPars="phase.angle"
+                              modelInfo$ncycle=1
+                              modelInfo$npars=4*(1+modelInfo$ncycle*1)  #par vector is of length 8
+                              modelInfo$parNam=c("pdd_m","pdd_amp",
+                                                 "pwd_m","pwd_amp",
+                                                 "alpha_m","alpha_amp",
+                                                 "beta_m","beta_amp")
+                              modelInfo$minBound=c(0.476, 0.006,
+                                                   0.093, 0.004,
+                                                   0.33, 0.002, 
+                                                   0.085, 0.028) #Aus 3stdev hard bounds
+                              modelInfo$maxBound=c(0.950, 0.257,
+                                                   0.728, 0.319,
+                                                   0.950, 0.200,
+                                                   15.00, 6.50)
+                          },
          "P-har6-wgen" = {modelInfo$simVar="P"
                            modelInfo$simPriority=1
                            modelInfo$nperiod=6
@@ -251,14 +285,24 @@ get.model.info<-function(modelTag=NULL #string used to specify model for stochas
                                                       10.0,10.0,1.05,
                                                       30.0,9.0,1.1,
                                                       10.0,10.0,1.05)
+                              },
+         "Radn-har26-wgen" = {modelInfo$simVar="Radn"
+                              modelInfo$simPriority=3
+                              modelInfo$nAssocSeries=0
+                              modelInfo$WDcondition=FALSE  #conditioned on wet/dry status
+                              modelInfo$wdCycle=FALSE
+                              modelInfo$nperiod=26
+                              modelInfo$fixedPars=NA
+                              modelInfo$ncycle=1 
+                              modelInfo$npars=2*(1+modelInfo$ncycle*2)+1             #par vector is of length  7
+                              modelInfo$parNam=c("cor0",
+                                                "WD-mCycle-m","WD-mCycle-amp","WD-mCycle-ang",
+                                                "WD-sCycle-m","WD-sCycle-amp","WD-sCycle-ang")
+                              modelInfo$minBound=c(0.45,7.0,1.0,-0.05,0.9,0.1,-1.6) #Placeholder bounds
+                              modelInfo$maxBound=c(0.9,29.0,10.0,0.81,4.9,1.4,3.15)
          },
          #--- MORE VERSIONS COMING ---
-         # "P-har26-wgen-FS" = {modelInfo$simVar="P"
-         # modelInfo$nperiod=26
-         #                     modelInfo$fixedPars="phase.angle"
-         #                     modelInfo$ncycle=1
-         #                     modelInfo$npars=4*(1+modelInfo$ncycle*1)  #par vector is of length 8
-         #                     },
+
          # "P-2har26-wgen-FS" = {modelInfo$simVar="P"
          # modelInfo$nperiod=26
          #                       modelInfo$fixedPars="phase.angle"
@@ -273,7 +317,66 @@ get.model.info<-function(modelTag=NULL #string used to specify model for stochas
   
 }
 
-#RETRUN VARIOUS PARS
+#UPDATE MODEL INFO IF FIXED PARAMETERS
+update.model.info<-function(modelTag=NULL, modelInfo=NULL,fixedPars=NULL,minUserBound=NULL,maxUserBound=NULL,file=NULL){
+  #check if model info correct
+  if((modelTag =="P-har12-wgen-FS")){  #only for FS currently
+    #Check if the correct number of fixed parameters is supplied
+    if(length(fixedPars)!=4){
+      logfile("Error: Incorrect number of fixed parameters values provided in fixedPar (4 needed)",file)
+      logfile("Program terminated",file)
+      stop("Incorrect number of fixed parameters values provided in fixedPar (4 needed)")
+    }  
+    
+    temp_modelInfo=get.model.info(modelTag="P-har12-wgen")
+    modelInfo$parNam=temp_modelInfo$parNam
+    modelInfo$npars=temp_modelInfo$npars
+    modelInfo$fixedPars=NA   #update to no fixed pars
+    #Insert fixed pars into vector quick way (only 1 option uses this so far)
+    make_minBound=c(modelInfo$minBound[1:2],fixedPars[1],
+                    modelInfo$minBound[3:4],fixedPars[2],
+                    modelInfo$minBound[5:6],fixedPars[3],
+                    modelInfo$minBound[7:8],fixedPars[4])
+
+    make_maxBound=c(modelInfo$maxBound[1:2],fixedPars[1],
+                    modelInfo$maxBound[3:4],fixedPars[2],
+                    modelInfo$maxBound[5:6],fixedPars[3],
+                    modelInfo$maxBound[7:8],fixedPars[4])
+    modelInfo$minBound=make_minBound
+    modelInfo$maxBound=make_maxBound
+  }
+  #USER SPECIFIED BOUNDS CASE
+  if((!is.null(minUserBound)) & (!is.null(maxUserBound))){  #
+    #Check if the correct number of fixed parameters is supplied
+    if((length(minUserBound)!=modelInfo$npars)|(length(maxUserBound)!=modelInfo$npars)){
+      dummy=paste0("Error: Incorrect length of supplied bounds ", modelInfo$npars, " needed")
+      logfile(dummy,file)
+      logfile("Program terminated",file)
+      stop(dummy)
+    } else{
+      modelInfo$minBound=minUserBound
+      modelInfo$maxBound=maxUserBound
+    }
+    
+  }
+  
+  #Otherwise do nothing
+  return(modelInfo)
+}
+# #EXAMPLE 1
+# modelTag="P-har12-wgen-FS"
+# modelInfo=get.model.info(modelTag)
+# update.model.info(modelTag=modelTag, modelInfo=modelInfo,fixedPars=c(1,2,3,4),minUserBound=NULL,maxUserBound=NULL)
+# #EXAMPLE 2
+# modelTag="P-ann-wgen"
+# modelInfo=get.model.info(modelTag)
+# update.model.info(modelTag=modelTag, modelInfo=modelInfo,fixedPars=NULL,minUserBound=c(0,0,3,4),maxUserBound=c(1,1,5,5))
+#EXAMPLE 3
+# modelTag="P-ann-wgen"
+# modelInfo=get.model.info(modelTag)
+# update.model.info(modelTag=modelTag, modelInfo=modelInfo,fixedPars=NULL,minUserBound=NULL,maxUserBound=NULL)
+
+#RETURN VARIOUS PARS
 return.simPriority<-function(modelInfo=NULL){
   return(modelInfo$simPriority)
 }
@@ -289,6 +392,7 @@ par.manager<-function(parS=NULL,         # pars to split
                       modelTag=NULL,     # model label
                       initCalibPars=NULL # par series from intial calib to obs
   ){
+  
   
   #IF NO HARMONIC OR PARAMETER FIXING APPLIED IN MODEL VERSION
   if(is.na(modelInfo$ncycle) & is.na(modelInfo$fixedPars)){
@@ -360,118 +464,118 @@ par.manager<-function(parS=NULL,         # pars to split
    return(out)
 }
 
-init.calib<- function(modelTag=NULL,  #model identifier
-                      modelInfo=NULL, #model information based on model identifier
-                      data=NULL,      #observed data (data frame) to be used in calibration
-                      datInd=NULL     #date index information
-  ){
-
-  #FOR ALL MODELS
-    pdd=rep(0,modelInfo$nperiod); alpha=beta=pwd=pdd    #make space to store fitted pars
-    for(p in 1:modelInfo$nperiod){
-      #fit pwd and pdd
-      tmp=pdd.pwd.estimator(dat=data,ind=datInd$i.pp[[p]],threshold=0.00)
-      pdd[p]=tmp$pdd; pwd[p]=tmp$pwd
-
-      #fit gamma pars (alpha & beta - using wgen manual labelling convention)
-      tmp=gammaParsMLE2(dat=data[datInd$i.pp[[p]]],wetThresh=0.00)
-      alpha[p]=tmp$shape; beta[p]=tmp$scale
-    }
-  
-    
-  
-  # MODELS WHERE A HARMONIC IS USED
-    #EACH PAR (PDD, PWD, ALPHA, BETA) IS FIT TO A HARMONIC (SOME EXCEPTIONS/SPECIAL CASES)
-    if(!is.na(modelInfo$ncycle)){
-      #fit pwd, pdd, alpha, beta
-      pdd.fit=fit.harmonic.opts(v.stat=pdd,k=modelInfo$ncycle,nperiod=modelInfo$nperiod)  #from harmonicFit.R
-      pwd.fit=fit.harmonic.opts(v.stat=pwd,k=modelInfo$ncycle,nperiod=modelInfo$nperiod)
-      alpha.fit=fit.harmonic.opts(v.stat=alpha,k=modelInfo$ncycle,nperiod=modelInfo$nperiod)
-      beta.fit=fit.harmonic.opts(v.stat=beta,k=modelInfo$ncycle,nperiod=modelInfo$nperiod)
-      #PARS MUST BE ARANGED IN ORDER (MEAN, AMP, PHASE ANGLE) FOR EACH FITTED PAR
-      initCalibPars=c(unlist(pdd.fit,use.names = FALSE),
-                      unlist(pwd.fit,use.names = FALSE),
-                      unlist(alpha.fit,use.names = FALSE),
-                      unlist(beta.fit,use.names = FALSE))
-    }else{
-      #MAKE PAR VECTOR C(PAR1 X NPERIOD),(PAR2 X NPERIOD),...)
-      initCalibPars=c(pdd,pwd,alpha,beta)
-    }
-    
-    #PLOT UP
-    # windows();par(mfrow=c(2,2))
-    # plot(x=seq(1,modelInfo$nperiod),pdd,pch=16,xlab="period")
-    # cycle.pdd=harmonicFunc(x=seq(1,modelInfo$nperiod),mean=pdd.fit$mean,amp=pdd.fit$amp,phase.ang=pdd.fit$phase.ang,k=modelInfo$ncycle,nperiod=modelInfo$nperiod)
-    # lines(x=seq(1,modelInfo$nperiod),cycle.pdd,col="red")
-    # title("pdd")
-    # plot(x=seq(1,modelInfo$nperiod),pwd,pch=16,xlab="period")
-    # cycle.pwd=harmonicFunc(x=seq(1,modelInfo$nperiod),mean=pwd.fit$mean,amp=pwd.fit$amp,phase.ang=pwd.fit$phase.ang,k=modelInfo$ncycle,nperiod=modelInfo$nperiod)
-    # lines(x=seq(1,modelInfo$nperiod),cycle.pwd,col="red")
-    # title("pwd")
-    # plot(x=seq(1,modelInfo$nperiod),alpha,pch=16,xlab="period")
-    # alpha.cycle=harmonicFunc(x=seq(1,modelInfo$nperiod),mean=alpha.fit$mean,amp=alpha.fit$amp,phase.ang=alpha.fit$phase.ang,k=modelInfo$ncycle,nperiod=modelInfo$nperiod)
-    # lines(x=seq(1,modelInfo$nperiod),alpha.cycle,col="red")
-    # title("alpha")
-    # plot(x=seq(1,modelInfo$nperiod),beta,pch=16,xlab="period")
-    # beta.cycle=harmonicFunc(x=seq(1,modelInfo$nperiod),mean=beta.fit$mean,amp=beta.fit$amp,phase.ang=beta.fit$phase.ang,k=modelInfo$ncycle,nperiod=modelInfo$nperiod)
-    # lines(x=seq(1,modelInfo$nperiod),beta.cycle,col="red")
-    # title("beta")
-    
-    
-    #return pars from initial calibration
-    return(initCalibPars)
-}
-
-#------------------------------------------------------------------------------------------
-gammaParsMLE2<- function(dat=NULL, #vector timeseries of rainfall amounts
-                         wetThresh=0.01, #threshold at which day is deemed wet
-                         ...){
-  
-  x=dat[which(dat>wetThresh)]    #get wet day amounts
-  nw=length(x)                   #no. wet days
-  x.mean=mean(x)                 #arithmetic mean of wet days
- 
-  s=log(x.mean)-sum(log(x))/nw
-  #est.shape - note in wgen manual shape is denoted using alpha
-  # ML method to estimate the 2 parameters of the gamma distribution from
-  # Wiki - https://en.wikipedia.org/wiki/Gamma_distribution#Characterization_using_shape_.CE.B1_and_rate_.CE.B2
- # k.est=(3-s+sqrt((s-3)^2+24*s))/(12*s)
-  #estimator from wgen manual
-  Anum=8.898919+9.05995*s+0.9775373*s^2.0
-  Adom=s*(17.79728+11.968477*s+s^2.0)
-  k.est=Anum/Adom
-  if(k.est >=1.0){k.est=0.998}
-  
-  #est.scale - Note in wgen manual scale is denoted by beta
-  theta.est=x.mean/k.est
-  
-  out=list(scale=theta.est,shape=k.est)
-  return(out)
-  
-}
-
-#---------------------------------------------------------------------------
-#Estimate pdd and pwd
-pdd.pwd.estimator<-function(dat=NULL,       # vector of rainfall values
-                            ind=NULL,       # indexes of days to assess
-                            threshold=0.01  # wet threshold
-){
-  n=length(ind)
-  nw=length(which(dat[ind]>threshold))
-  nd=n-nw
-  #pDry=nd/n
-  
-  ind.prior=ind[-n]; ind.now=ind[-n]+1  #for clarity spell out which is the prior day series and current day series (DROP LAST VALUE TO AVOID ARRAY OVERFLOW)
-  
-  ind.wd.p=ind[which((dat[ind.prior])>threshold & (dat[ind.now])<=threshold)]  # GET INDICES OF WET(i-1) - DRY(i) PAIRS
-  n.wd=length(ind.wd.p)
-  
-  ind.dw.p=ind[which((dat[ind.prior])<=threshold & (dat[ind.now])>threshold)]  # GET INDICES OF DRY(i-1) - WET(i) PAIRS
-  n.dw=length(ind.dw.p)
-  
-  probs=list(pwd=(n.wd/nw),pdd=(1-(n.dw/nd)))
-  return(probs)
-}
+# init.calib<- function(modelTag=NULL,  #model identifier
+#                       modelInfo=NULL, #model information based on model identifier
+#                       data=NULL,      #observed data (data frame) to be used in calibration
+#                       datInd=NULL     #date index information
+#   ){
+# 
+#   #FOR ALL MODELS
+#     pdd=rep(0,modelInfo$nperiod); alpha=beta=pwd=pdd    #make space to store fitted pars
+#     for(p in 1:modelInfo$nperiod){
+#       #fit pwd and pdd
+#       tmp=pdd.pwd.estimator(dat=data,ind=datInd$i.pp[[p]],threshold=0.00)
+#       pdd[p]=tmp$pdd; pwd[p]=tmp$pwd
+# 
+#       #fit gamma pars (alpha & beta - using wgen manual labelling convention)
+#       tmp=gammaParsMLE2(dat=data[datInd$i.pp[[p]]],wetThresh=0.00)
+#       alpha[p]=tmp$shape; beta[p]=tmp$scale
+#     }
+#   
+#     
+#   
+#   # MODELS WHERE A HARMONIC IS USED
+#     #EACH PAR (PDD, PWD, ALPHA, BETA) IS FIT TO A HARMONIC (SOME EXCEPTIONS/SPECIAL CASES)
+#     if(!is.na(modelInfo$ncycle)){
+#       #fit pwd, pdd, alpha, beta
+#       pdd.fit=fit.harmonic.opts(v.stat=pdd,k=modelInfo$ncycle,nperiod=modelInfo$nperiod)  #from harmonicFit.R
+#       pwd.fit=fit.harmonic.opts(v.stat=pwd,k=modelInfo$ncycle,nperiod=modelInfo$nperiod)
+#       alpha.fit=fit.harmonic.opts(v.stat=alpha,k=modelInfo$ncycle,nperiod=modelInfo$nperiod)
+#       beta.fit=fit.harmonic.opts(v.stat=beta,k=modelInfo$ncycle,nperiod=modelInfo$nperiod)
+#       #PARS MUST BE ARANGED IN ORDER (MEAN, AMP, PHASE ANGLE) FOR EACH FITTED PAR
+#       initCalibPars=c(unlist(pdd.fit,use.names = FALSE),
+#                       unlist(pwd.fit,use.names = FALSE),
+#                       unlist(alpha.fit,use.names = FALSE),
+#                       unlist(beta.fit,use.names = FALSE))
+#     }else{
+#       #MAKE PAR VECTOR C(PAR1 X NPERIOD),(PAR2 X NPERIOD),...)
+#       initCalibPars=c(pdd,pwd,alpha,beta)
+#     }
+#     
+#     #PLOT UP
+#     # windows();par(mfrow=c(2,2))
+#     # plot(x=seq(1,modelInfo$nperiod),pdd,pch=16,xlab="period")
+#     # cycle.pdd=harmonicFunc(x=seq(1,modelInfo$nperiod),mean=pdd.fit$mean,amp=pdd.fit$amp,phase.ang=pdd.fit$phase.ang,k=modelInfo$ncycle,nperiod=modelInfo$nperiod)
+#     # lines(x=seq(1,modelInfo$nperiod),cycle.pdd,col="red")
+#     # title("pdd")
+#     # plot(x=seq(1,modelInfo$nperiod),pwd,pch=16,xlab="period")
+#     # cycle.pwd=harmonicFunc(x=seq(1,modelInfo$nperiod),mean=pwd.fit$mean,amp=pwd.fit$amp,phase.ang=pwd.fit$phase.ang,k=modelInfo$ncycle,nperiod=modelInfo$nperiod)
+#     # lines(x=seq(1,modelInfo$nperiod),cycle.pwd,col="red")
+#     # title("pwd")
+#     # plot(x=seq(1,modelInfo$nperiod),alpha,pch=16,xlab="period")
+#     # alpha.cycle=harmonicFunc(x=seq(1,modelInfo$nperiod),mean=alpha.fit$mean,amp=alpha.fit$amp,phase.ang=alpha.fit$phase.ang,k=modelInfo$ncycle,nperiod=modelInfo$nperiod)
+#     # lines(x=seq(1,modelInfo$nperiod),alpha.cycle,col="red")
+#     # title("alpha")
+#     # plot(x=seq(1,modelInfo$nperiod),beta,pch=16,xlab="period")
+#     # beta.cycle=harmonicFunc(x=seq(1,modelInfo$nperiod),mean=beta.fit$mean,amp=beta.fit$amp,phase.ang=beta.fit$phase.ang,k=modelInfo$ncycle,nperiod=modelInfo$nperiod)
+#     # lines(x=seq(1,modelInfo$nperiod),beta.cycle,col="red")
+#     # title("beta")
+#     
+#     
+#     #return pars from initial calibration
+#     return(initCalibPars)
+# }
+# 
+# #------------------------------------------------------------------------------------------
+# gammaParsMLE2<- function(dat=NULL, #vector timeseries of rainfall amounts
+#                          wetThresh=0.01, #threshold at which day is deemed wet
+#                          ...){
+#   
+#   x=dat[which(dat>wetThresh)]    #get wet day amounts
+#   nw=length(x)                   #no. wet days
+#   x.mean=mean(x)                 #arithmetic mean of wet days
+#  
+#   s=log(x.mean)-sum(log(x))/nw
+#   #est.shape - note in wgen manual shape is denoted using alpha
+#   # ML method to estimate the 2 parameters of the gamma distribution from
+#   # Wiki - https://en.wikipedia.org/wiki/Gamma_distribution#Characterization_using_shape_.CE.B1_and_rate_.CE.B2
+#  # k.est=(3-s+sqrt((s-3)^2+24*s))/(12*s)
+#   #estimator from wgen manual
+#   Anum=8.898919+9.05995*s+0.9775373*s^2.0
+#   Adom=s*(17.79728+11.968477*s+s^2.0)
+#   k.est=Anum/Adom
+#   if(k.est >=1.0){k.est=0.998}
+#   
+#   #est.scale - Note in wgen manual scale is denoted by beta
+#   theta.est=x.mean/k.est
+#   
+#   out=list(scale=theta.est,shape=k.est)
+#   return(out)
+#   
+# }
+# 
+# #---------------------------------------------------------------------------
+# #Estimate pdd and pwd
+# pdd.pwd.estimator<-function(dat=NULL,       # vector of rainfall values
+#                             ind=NULL,       # indexes of days to assess
+#                             threshold=0.01  # wet threshold
+# ){
+#   n=length(ind)
+#   nw=length(which(dat[ind]>threshold))
+#   nd=n-nw
+#   #pDry=nd/n
+#   
+#   ind.prior=ind[-n]; ind.now=ind[-n]+1  #for clarity spell out which is the prior day series and current day series (DROP LAST VALUE TO AVOID ARRAY OVERFLOW)
+#   
+#   ind.wd.p=ind[which((dat[ind.prior])>threshold & (dat[ind.now])<=threshold)]  # GET INDICES OF WET(i-1) - DRY(i) PAIRS
+#   n.wd=length(ind.wd.p)
+#   
+#   ind.dw.p=ind[which((dat[ind.prior])<=threshold & (dat[ind.now])>threshold)]  # GET INDICES OF DRY(i-1) - WET(i) PAIRS
+#   n.dw=length(ind.dw.p)
+#   
+#   probs=list(pwd=(n.wd/nw),pdd=(1-(n.dw/nd)))
+#   return(probs)
+# }
 
 
 #parMangement for TS generation
@@ -627,6 +731,13 @@ whichPars<-function(simVar=NULL,
   return(parLoc)
 }
 
+
+#Update modelTag order
+update.simPriority<-function(modelInfo=NULL){
+  simPriority=sort(sapply(X=modelInfo,FUN=return.simPriority,USE.NAMES=TRUE)) #get simulation priority of each model
+  modelTag=names(simPriority)                                                 # Force simVar="P" to come first via sorting by $simPrority
+  return(modelTag)
+}
 
 
 

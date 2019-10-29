@@ -5,11 +5,13 @@ heatPlot<-function(plotArgs=plotArgs,
                    attSel=attSel,
                    attPerturb=attPerturb,
                    performance=performance){
+  level=NULL
+  
   #Not hooked up
   if(is.null(plotArgs$xtitle)){
     plotArgs$xtitle=tagBlender(as.character(attPerturb[2]))
   }
-
+ 
   if(is.null(plotArgs$ytitle)){
       plotArgs$ytitle=tagBlender(as.character(attPerturb[1]))
   }
@@ -30,18 +32,18 @@ heatPlot<-function(plotArgs=plotArgs,
         theme(axis.title.y=element_text(angle=90, vjust=-0.5)) +
         theme(axis.title=element_text(size=12),axis.text=element_text(size=10)) +
         theme(axis.line=element_blank())+
-        theme(plot.margin = unit(c(0,0.2,0.2,0), "cm"))+
+        theme(plot.margin = unit(c(0,0.2,0.7,0), "cm"))+
         scale_x_continuous(expand=c(0,0))+
         scale_y_continuous(expand=c(0,0))+
-        theme(legend.position="bottom",legend.box.margin = margin(-20,-10,-4,-10),legend.justification="centre")+
+        theme(legend.position="bottom",legend.box.margin = margin(-10,-10,-4,-10),legend.justification="centre")+
         theme(legend.title=element_text(size=11),legend.text=element_text(size=10),legend.key.width = unit(2,"cm"))+
-        theme(panel.border = element_rect(colour = "black",size=1,linetype="solid"))+
+        theme(panel.border = element_rect(colour = "black",size=1,linetype="solid",fill=NA))+
         coord_cartesian(xlim=c(plotArgs$xlim[1],plotArgs$xlim[2]),ylim=c(plotArgs$ylim[1],plotArgs$ylim[2]))
   
   if(isTRUE(plotArgs$contour)) {
-    p1<-p1+directlabels::geom_dl(data=targetPerf,aes(x = targetPerf[,x], y = targetPerf[,y],z=performance,label=..level..),
-            method=list("first.points", "calc.boxes", "enlarge.box",box.color = NA, fill = "transparent", vjust=1.5,hjust=-0.5, "draw.rects"),stat="contour",breaks=seq(0.6,0.8,0.01))+
-            stat_contour(data=targetPerf,aes(x = targetPerf[,x], y = targetPerf[,y],z = performance),breaks=seq(0.6,0.8,0.01),colour="black")
+    p1<-p1+directlabels::geom_dl(data=targetPerf,aes(x = targetPerf[,x], y = targetPerf[,y],z=performance,label=stat(level)), #edited 20/06/2018
+            method=list("first.points", "calc.boxes", "enlarge.box",box.color = NA, fill = "transparent", vjust=1.5,hjust=-0.5, "draw.rects"),stat="contour")+  #,breaks=seq(0.6,0.8,0.01)
+            stat_contour(data=targetPerf,aes(x = targetPerf[,x], y = targetPerf[,y],z = performance),colour="black") #,breaks=seq(0.6,0.8,0.01)
   }
   
   if(!is.null(plotArgs$performancelimits)){
@@ -50,16 +52,17 @@ heatPlot<-function(plotArgs=plotArgs,
     p1<-p1+scale_fill_gradient(low=plotArgs$lowfill, high=plotArgs$highfill)
   }
   
-  if(is.null(plotArgs$legendtitle)){
-    p1<-p1+guides(fill = guide_colorbar(title = "Performance"))
-  } else {
+  if(!is.null(plotArgs$legendtitle)){
     p1<-p1+guides(fill = guide_colorbar(title = plotArgs$legendtitle))
+  } else {
+    p1<-p1+guides(fill = guide_colorbar(title = "Performance"))
   }
   
-  guides(fill = guide_colorbar(title = "Performance"))
+  # guides(fill = guide_colorbar(title = "Performance"))
 
+  #Create a title
   title <- cowplot::ggdraw() + cowplot::draw_label(plotArgs$title, fontface='bold')
-  
+  #Stitch title to plot
   p2<-cowplot::plot_grid(title,p1,align="v",nrow=2,rel_heights = c(0.05,0.95))
 
   return(list(plotEdit=p1,plot=p2))
@@ -67,28 +70,30 @@ heatPlot<-function(plotArgs=plotArgs,
 }
 
 #Wrapper for making each OAT panel
-plotwrapperoat<-function(data=NULL){
-  p1 <- ggplot(data=data,aes(x=data[1],y=data[2]))+ 
-    geom_line() +
-    scale_x_continuous()+
-    theme(axis.line=element_blank())+
-    theme(panel.border = element_rect(colour = "black",size=1,linetype="solid"))+
-    xlab(tagBlender(names(data)[1]))+
-    ylab(names(data)[2])+
-    ylim(0,1)
+plotwrapperoat<-function(data=NULL, plotArgs=NULL){
+  p1 <- ggplot(data=data,
+               aes(x=data[,1],y=data[,2]))+ #edited 23/6/2018 for ggplot compatability
+               geom_line() +
+               scale_x_continuous()+
+               theme(axis.line=element_blank())+
+               theme(panel.border = element_rect(colour = "black",size=1,linetype="solid",fill=NA))+
+               xlab(tagBlender(names(data)[1]))+
+               ylab(names(data)[2])+
+               ylim(plotArgs$performancelimits[1],plotArgs$performancelimits[2])
 }
 
 oatplots<-function(targetMat=NULL,
                    attPerturb=NULL,
                    performance=NULL,
-                   exSpArgs=NULL
+                   exSpArgs=NULL,
+                   plotArgs=NULL
                    ){
   
   #No. of things perturbed
   nAtts=length(attPerturb)
   
   #stitch
-  targetPerf<-data.frame(targetMat,performance)  
+  targetPerf<-data.frame(targetMat[,attPerturb],performance)  
   
   #get indexes at which to chop targetMat 
   chop=rep(NA,(nAtts))
@@ -100,7 +105,7 @@ oatplots<-function(targetMat=NULL,
     dflist[[i]]=targetPerf[(chop[i]-exSpArgs$samp[i]+1):chop[i],c(i,(nAtts+1))]
   }
   #PLOT OATIES
-  myplots <- lapply(X=dflist,FUN=plotwrapperoat)  # new empty list
+  myplots <- lapply(X=dflist,FUN=plotwrapperoat,plotArgs)  # new empty list
   p4 <- cowplot::plot_grid(plotlist=myplots,ncol=nAtts)
   return(p4)
 }
@@ -114,6 +119,8 @@ contourPlots<-function(plotArgs=plotArgs,
                        attPerturb=attPerturb,
                        performance=performance
                        ){
+  
+  level=NULL
   #not hooked up
   if(is.null(plotArgs$xtitle)){
     plotArgs$xtitle=tagBlender(as.character(attPerturb[2]))
@@ -142,10 +149,10 @@ contourPlots<-function(plotArgs=plotArgs,
     theme(plot.margin = unit(c(0,0.2,0.2,0), "cm"))+
     scale_x_continuous(expand=c(0,0))+
     scale_y_continuous(expand=c(0,0))+
-    theme(panel.border = element_rect(colour = "black",size=1,linetype="solid"))+
+    theme(panel.border = element_rect(colour = "black",size=1,linetype="solid",fill=NA))+ #edit 20/6/2018 fill=NA added
     theme(legend.position="bottom",legend.box.margin = margin(-20,-10,-4,-10),legend.justification="centre")+
     theme(legend.title=element_text(size=11),legend.text=element_text(size=10),legend.key.width = unit(2,"cm"))+
-    directlabels::geom_dl(data=targetPerf,aes(x = targetPerf[,x], y = targetPerf[,y],z=performance,label=..level..),
+    directlabels::geom_dl(data=targetPerf,aes(x = targetPerf[,x], y = targetPerf[,y],z=performance,label=stat(level)),  #edit 20/6/2018
                           method=list("first.points", "calc.boxes", "enlarge.box", 
                           box.color = NA, fill = "transparent", vjust=1.5,hjust=-1, "draw.rects"),stat="contour",breaks=plotArgs$contourlevels)+
     coord_cartesian(xlim=c(plotArgs$xlim[1],plotArgs$xlim[2]),ylim=c(plotArgs$ylim[1],plotArgs$ylim[2]))

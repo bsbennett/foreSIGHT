@@ -30,13 +30,8 @@ simulateTarget<-function(
   #LOOP OVER EACH STOCHASTIC MODEL NOMINATED
   nMod=length(modelTag)
   out=list()
-  
   parV=NULL
-  
-  #TRIM TO RETAIN NON-NAs
-  #Which target inloop (done by eval 1st column)
-#  if(is.na(parSim[1,1])){nLoop=1}else{nLoop=which(is.na(parSim[,1]))[1]} 
-#  if(nLoop>1){parSim=parSim[1:(nLoop-1),]}else{parSim=NULL}
+  objScore=NULL
   
   #MERGE WITH ANY SUGGESTIONS SUPPLIED IN OPTIMARGS
   if(!is.null(optimArgs$suggestions)){
@@ -48,6 +43,8 @@ simulateTarget<-function(
     parSugg=NULL
   }
   
+  attSim=list()          #Make list to store simulated attributes
+  targetSim=list()       #Make list to store simulated attributes(target space converted)
   for(mod in 1:nMod){
     
      #IF CONDITIONED ON DRY-WET STATUS, populate wdStatus
@@ -61,7 +58,22 @@ simulateTarget<-function(
                        },
                     {wdStatus=NULL}  #default
              )
+    
+    if(length(which(modelInfo[[modelTag[mod]]]$minBound==modelInfo[[modelTag[mod]]]$maxBound))==length(modelInfo[[modelTag[mod]]]$minBound)){# 
+      progress(p("    Working on variable ",simVar[mod]),file)
+      progress(p("    Parameters specified by user, no optimisation ..."),file)
       
+      out[[simVar[mod]]]=switch_simulator(type=modelInfo[[modelTag[mod]]]$simVar,
+                                          parS=modelInfo[[modelTag[mod]]]$minBound,   #bounds become the pars
+                                          modelTag=modelTag[mod],
+                                          modelInfo=modelInfo[[modelTag[mod]]],
+                                          datInd=datInd[[modelTag[mod]]],
+                                          initCalibPars=NULL,
+                                          wdSeries=wdStatus,
+                                          resid_ts=NULL,
+                                          seed=optTest$seed)
+
+    }else{
       progress(p("    Working on variable ",simVar[mod]),file)
       progress(p("    Commencing optimisation..."),file)
       
@@ -102,16 +114,31 @@ simulateTarget<-function(
                                           resid_ts=NULL,
                                           seed=optTest$seed)
       
-      
-      
+    }
+    
       #CALCULATE SELECTED ATTRIBUTE VALUES
       sim.att=attribute.calculator(attSel=attSel[attInd[[mod]]],data=out[[simVar[mod]]]$sim,datInd=datInd[[modelTag[mod]]],attribute.funcs=attribute.funcs)
+      attSim[[mod]]=sim.att        #store simulated attributes in list
       
       #RELATING TO BASELINE SERIES 
       simPt=unlist(Map(function(type, val,baseVal) simPt.converter.func(type,val,baseVal), attInfo$targetType[attInd[[mod]]], as.vector(sim.att),as.vector(attObs[attInd[[mod]]])),use.names = FALSE)   
+      names(simPt)=attSel[attInd[[mod]]]
+      targetSim[[mod]]=simPt             #Store in list
       
+      # dist=eucDist(target=targetLoc[attInd[[mod]]],simPt=simPt)
+      # progress(paste0("    Euc Dist ",signif(dist,4)),file)
+      # 
+      # primInd=which(attInfo[[modelTag[mod]]]$primType==TRUE)
+      # penalty.score=penaltyFunc_basic(target=targetLoc[attInd[[mod]]][primInd],simPt=simPt[primInd],lambda=optimArgs$lambda.mult[attInfo[[modelTag[mod]]]$primMult])
+      # progress(paste0("    Penalty ",signif(penalty.score,4)),file)
+      # 
+      # progress(paste("    target - ",paste(attPrim,": ",signif(targetLoc[attInd[[mod]]][primInd],digits=4),collapse = ", ",sep=""),sep=''),file)
+      # progress(paste("    simpt - ",paste(attPrim,": ",signif(simPt[attInd[[mod]]][primInd],digits=4),collapse = ", ",sep=""),sep=''),file)
+      # progress(paste("    lambda - ",paste(attPrim,": ",signif(optimArgs$lambda.mult[attInfo[[modelTag[mod]]]$primMult],digits=4),collapse = ", ",sep=""),sep=''),file)
+                      
       score=objFuncMC(attSel= attSel[attInd[[mod]]],     # vector of selected attributes 
                       attPrim=attPrim,      # any primary attributes
+                      attInfo=attInfo[[modelTag[mod]]],
                       simPt=simPt,
                       target=targetLoc[attInd[[mod]]],
                       penalty.func=penaltyFunc_basic,   #make this changeable (auto calc lambda)
@@ -121,39 +148,19 @@ simulateTarget<-function(
       progress(paste0("    Variable ",simVar[mod]," final sim series fitness: ",signif(score,4)),file)
       
       parV=c(parV,optTest$par)
-      
+      objScore=c(objScore,score)
 
   }  #end model loop
   
-  #CALCULATE SIM ATTRIBUTES HERE-----
-  attSim=list()
-  for(mod in 1:nMod){
-    attSim[[mod]]=attribute.calculator(attSel=attSel[attInd[[mod]]],data=out[[simVar[mod]]]$sim,datInd=datInd[[modelTag[mod]]],attribute.funcs=attribute.funcs)
-  }
-  out$attSim=unlist(attSim)  #store in out list
+  #CALCULATE SIM ATTRIBUTES HERE (ABSOLUTE AND TARGET SPACE)
+  out$attSim=unlist(attSim)[attSel]        # unlist,relist & make sure order is correct
   progress(paste("    Attributes Simulated - ",paste(attSel,": ",signif(out$attSim,digits=4),collapse = ", ",sep=""),sep=''),file)
   
-  targetSim=unlist(Map(function(type, val,baseVal) simPt.converter.func(type,val,baseVal), attInfo$targetType, as.vector(out$attSim),as.vector(attObs)),use.names = FALSE)
- 
-  names(targetSim)=attSel
-  out$targetSim=targetSim
+  out$targetSim=unlist(targetSim)[attSel]  # unlist,relist & make sure order is correct
   progress(paste("    Target Simulated - ",paste(attSel,": ",signif(out$targetSim,digits=4),collapse = ", ",sep=''),sep=""),file)
-  # progress(paste("    Final sim series fitness (no penalty):", signif(eucDist(simPt=out$targetSim,target=targetLoc),digits=4)),file)
 
-  #penalty.func(target=target[primInd],simPt=simPt[primInd],lambda=lambda)
-  
-  # get.ind=function(x,y){which(x == y)}
-  # 
-  # # PENALTY FUNCTION
-  # if(length(attPrim)>0){
-  #   #IDENTIFY PRIMARY ATTRIBUTES 
-  #   primInd=vapply(attPrim,FUN=get.ind,FUN.VALUE=numeric(1),x=attSel,USE.NAMES = FALSE)  #Indices of primary attributes
-  
   out$parS=parV
-  
-  #WRITE SIMULATED TIMESERIES TO CSV FILE
-  
-  
+  out$score=objScore
   return(out)
 }
 

@@ -3,7 +3,11 @@
 #######################################
 
 #CONTAINS
+  # dateExtender()
   # extendDates()
+  # makeDates() - produces dates data.frame (year, month, day columns)
+  # mod.get.date.ind() - grab a variety of date indices from multiple modelTags
+  # mod.get.date.ind.extnd() - grab a variety of date indices from multiple modelTags with date extension
   # get.date.ind() - master function to grab a variety of date indices
   # get.month.ind()
   # get.year.ind()
@@ -13,6 +17,26 @@
   # get.period.ind() - groups indices with the same period assignment
 
 ##############################################################################
+dateExtender<-function(obs=NULL,
+                       simLengthNyrs=NULL,
+                       file=NULL,
+                       modelTag=NULL
+                       ){
+  #EXTEND DATES IF NEEDED
+  if(!is.null(simLengthNyrs)){
+    if(modelTag[[1]] != "Simple-ann"){
+      dateExtnd=extendDates(simLengthNyrs=simLengthNyrs,dd=obs$day,mm=obs$month,yy=obs$year)
+      progress("Extending dates",file)
+    }else{
+      dateExtnd=obs[,c("year","month","day")]                                              # make the same as observed
+      progress("Length of time series cannot be increased using simple scaling",file)
+    }
+  }else{
+    dateExtnd=obs[,c("year","month","day")]                                               # make the same as observed
+  }
+  return(dateExtnd)
+}
+
 extendDates<-function(simLengthNyrs=NULL,
                       dd=NULL,
                       mm=NULL,
@@ -29,10 +53,52 @@ extendDates<-function(simLengthNyrs=NULL,
   dates=data.frame(year,month,day)
   return(dates)
 }
-
 #TEST
 # tester=extendDates(simLengthNyrs=100,dd=obs$day,mm=obs$month,yy=obs$year)
 
+makeDates<-function(datStart=NULL,
+                    datFinish=NULL){
+  date_gen=seq(as.Date(datStart),as.Date(datFinish),by="day")
+  day <- as.numeric(format(date_gen,"%d"))
+  month<- as.numeric(format(date_gen,"%m"))
+  year<- as.numeric(format(date_gen,"%Y"))
+  dates=data.frame(year,month,day)
+  return(dates)
+}
+
+#get date info across multiple models
+mod.get.date.ind<-function(obs=NULL,
+                           modelTag=NULL,
+                           modelInfo=NULL,
+                           southHemi=TRUE){
+  nMod=length(modelTag)   #how many models
+  datInd=list()
+  datInd[["obs"]]=get.date.ind(dd=obs$day,mm=obs$month,yy=obs$year,nperiod=12,southHemi=southHemi)              #make obs based datInd
+  for(i in 1:nMod){
+    datInd[[modelTag[i]]]=get.date.ind(dd=obs$day,mm=obs$month,yy=obs$year,nperiod=modelInfo[[modelTag[i]]]$nperiod,southHemi=southHemi)    # FROM dateManager.R
+    # datInd[[modelTag[i]]]$i.mod=datInd[[modelTag[i]]]$i.pp  #add on i.mod
+  }
+  return(datInd)
+}
+
+#get date info across multiple models - dates extended
+mod.get.date.ind.extnd<-function(obs=NULL,
+                                 dateExtnd=NULL,
+                                 modelTag=NULL,
+                                 modelInfo=NULL,
+                                 southHemi=TRUE,
+                                 simLengthNyrs=NULL,
+                                 file=NULL
+                                 ){
+  datInd=list()
+  datInd[["obs"]]=get.date.ind(dd=obs$day,mm=obs$month,yy=obs$year,nperiod=12,southHemi=southHemi)              #make obs based datInd
+  for(i in 1:length(modelTag)){
+    datInd[[modelTag[i]]]=get.date.ind(dd=dateExtnd$day,mm=dateExtnd$month,yy=dateExtnd$year,nperiod=modelInfo[[modelTag[i]]]$nperiod,southHemi=TRUE)          # FROM dateManager.R
+  }
+  return(datInd)
+}
+
+#Get dat indices
 get.date.ind<-function(dd=NULL,
                        mm=NULL,
                        yy=NULL,

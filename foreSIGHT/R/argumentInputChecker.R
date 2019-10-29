@@ -55,11 +55,11 @@ argument_check<-function(names=NULL,
   if (modelTag[1]=="Simple-ann") {
     
     for (i in 1:length(attPerturb)){
-    if(sum(attPerturb[i] %in% attributelist)==0){
-      logfile("Error: attPerturb unrecognised",file)
-      logfile("Program terminated",file)
-      stop(paste0("attPerturb ",i," unrecognised"))
-    }
+      if(sum(attPerturb[i] %in% attributelist)==0){
+        logfile("Error: attPerturb unrecognised",file)
+        logfile("Program terminated",file)
+        stop(paste0("attPerturb ",i," unrecognised"))
+      }
     }
     
     if(length(attPrim)!=0) {
@@ -110,30 +110,30 @@ argument_check<-function(names=NULL,
     #   stop("Ensure that primary attributes are also listed in selected attributes")
     # }
     for(i in 1:length(modelTag)){
-    if(sum(modelTag[i] %in% modelTaglist)==0){
-      logfile("Error: modelTag unrecognised",file)
-      logfile("Program terminated",file)
-      stop(paste0("modelTag ",i," unrecognised"))
-    }
+      if(sum(modelTag[i] %in% modelTaglist)==0){
+        logfile("Error: modelTag unrecognised",file)
+        logfile("Program terminated",file)
+        stop(paste0("modelTag ",i," unrecognised"))
+      }
     }
     
     for (i in 1:length(attPerturb)){
-    if(sum(attPerturb[i] %in% attributelist)==0){
-      logfile("Error: attPerturb unrecognised",file)
-      logfile("Program terminated",file)
-      stop(paste0("attPerturb ",i," unrecognised"))
-    }
+      if(sum(attPerturb[i] %in% attributelist)==0){
+        logfile("Error: attPerturb unrecognised",file)
+        logfile("Program terminated",file)
+        stop(paste0("attPerturb ",i," unrecognised"))
+      }
     }
     
     
     if(!is.null(attHold)){
-    for (i in 1:length(attHold)){
-    if(sum(attHold[i] %in% attributelist)==0){
-      logfile("Error: attHold unrecognised",file)
-      logfile("Program terminated",file)
-      stop(paste0("attHold ",i," unrecognised"))
-    }
-    }
+      for (i in 1:length(attHold)){
+        if(sum(attHold[i] %in% attributelist)==0){
+          logfile("Error: attHold unrecognised",file)
+          logfile("Program terminated",file)
+          stop(paste0("attHold ",i," unrecognised"))
+        }
+      }
     }
     
     #CHECKS FOR TWO REQUESTED MODEL TYPES

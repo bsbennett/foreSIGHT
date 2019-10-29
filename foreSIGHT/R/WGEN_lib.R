@@ -59,9 +59,21 @@ switch_simulator<-function(type=NULL,          # what vartype is being simulated
                                   initCalibPars=initCalibPars, 
                                   wdSeries=wdSeries,      
                                   resid_ts=resid_ts,
-                                  seed=seed)
+                                  seed=seed,
+                                  trunc=0)
            
                  },
+         "Radn" = { TS_WGEN_master(parS=parS,         
+                                  modelTag=modelTag,      
+                                  modelInfo=modelInfo,
+                                  datInd=datInd,        
+                                  initCalibPars=initCalibPars, 
+                                  wdSeries=wdSeries,      
+                                  resid_ts=resid_ts,
+                                  seed=seed,
+                                  trunc=0)
+           
+         },
          
          # "RH" = { TS_WGEN_master(parS=parS,         
          #                         modelTag=modelTag,      
@@ -101,13 +113,13 @@ P_WGEN_master<- function(parS,               # vector of pars (will change in op
                      parAlpha=par$alpha,
                      parBeta=par$beta,
                      nperiod=modelInfo$nperiod,
-                     i.pp=datInd$i.mod,   #
-                     ndays=length(unlist(datInd$i.mod)), #
+                     i.pp=datInd$i.pp,   #
+                     ndays=length(unlist(datInd$i.pp)), #
                      Nw=Nw,
                      N=N)
   
   #REMOVE 1 YEAR WARM-UP PERIOD supplied by i.mod
-  nLast=length(sim$sim); sim$sim=sim$sim[(nLast-datInd$ndays+1):nLast]
+  # nLast=length(sim$sim); sim$sim=sim$sim[(nLast-datInd$ndays+1):nLast]
   
   return(sim)  #return simulated rainfall
 }
@@ -227,20 +239,30 @@ Pamount_WGEN_generic <- function(parAlpha=NULL,         # vector of pars for alp
 ){ 
   
   #GENERATE RAIN ON A PERIOD BASIS
-  Nw=50                                               #warmup
+  set.seed(N)                                         # set seeds
+  Nw=20                                               # warmup
+  nShuffle=120                                        # shuffle period to remove artefacts
   rain=rep(0,ndays)                                   # make a rainfall TS of 0s
   for (i in 1:nperiod) {
-    set.seed(N)                                       # set seeds
    # .Random.seed <- seed3                            # same seed is being used for each wet day generation call
     wet.days=which(status_ts[i.pp[[i]]]==1)           
     ind=i.pp[[i]][wet.days]                           # index of where to put the wet days into the TS vector
     nwet=length(ind)                                  # get no. of wet days to sim 
     options(warn=-1)
-    allwet <- rgamma((nwet+Nw),
-                     shape=parAlpha[i],
-                     scale=parBeta[i])                # generate rainfall intensity for all wet days in each season 
-    allwet=allwet[-(1:Nw)]
+    allwet<- rgamma((nwet+Nw),
+                    shape=parAlpha[i],
+                    scale=parBeta[i])                 # generate rainfall intensity for all wet days in each season
     options(warn=0)
+    if(nwet>nShuffle){
+      n_start=Nw+nShuffle                             # include warm-up in shuffle
+      allwet_start=sample(allwet[1:n_start],replace=F,size=n_start) #resample first set to remove weird wave artefact
+      allwet[1:n_start]=allwet_start                  # replace initial entries with shuffled set
+      allwet=allwet[-(1:Nw)]
+    }else{
+      allwet=sample(allwet,replace=F,size=length(allwet)) #resample to get rid of weird wave in 1st yrs  #could split and shuffle 1st only
+      allwet=allwet[-(1:Nw)]
+    }
+
     rain[ind]=allwet                                  # distribute wet-day amounts for season 's' into rainfall timeseries
   }                                                   # loop over seasons
   
@@ -300,7 +322,8 @@ TS_WGEN_master<- function(parS=NULL,         # vector of pars (will change in op
                           initCalibPars=NULL, # vector of pars from initial baseline calibration
                           wdSeries=NULL,      # rain  series
                           resid_ts=NULL,
-                          seed=NULL
+                          seed=NULL,
+                          trunc=NULL
 ){
   #Converts supplied pars into required format (e.g. if harmonic applied)
   par=simHarTS.parmanager(parS=parS,modelTag=modelTag,modelInfo=modelInfo,initCalibPars=initCalibPars)
@@ -321,6 +344,11 @@ TS_WGEN_master<- function(parS=NULL,         # vector of pars (will change in op
                       resid_ts=resid_ts,        # leave capacity to generate or receive residuals
                       seed=seed                 # seed for residuals generation
   )
+  #Make data below threshold zero (i.e. no negative radiation)
+  if(!is.null(trunc)){
+   badIndx=which(sim$sim<trunc)
+   if(length(badIndx)>0){sim$sim[badIndx]=0}
+  }
   
   return(sim)
 }
@@ -425,23 +453,26 @@ residualGenerator<-function(parCor0=NULL,
                             parCor1=NULL,
                             ndays=NULL,
                             nAssocSeries=0,
-                            seed=1234
+                            seed=1234,
+                            Nw=200      #Added warm-up period to residuals
 ){
   
-  #GENERATE RANDOM UNIFORM NUMBERS
+  #GENERATE RANDOM NUMBERS FROM A STANDARD NORMAL (MEAN=0, STD=1)
   set.seed(seed)
   
-  RN_res<-matrix(runif(ndays*(1+nAssocSeries)),nrow=ndays,ncol=(1+nAssocSeries))
-  res_gen<-matrix(NA,nrow=ndays,ncol=(1+nAssocSeries))
+  RN_res<-matrix(rnorm(mean=0,sd=1,n=(ndays+Nw)*(1+nAssocSeries)),nrow=(ndays+Nw),ncol=(1+nAssocSeries))
+  res_gen<-matrix(NA,nrow=(ndays+Nw),ncol=(1+nAssocSeries))
   
   if(nAssocSeries==0){  #if just one series
     A<- parCor1[1]
     B<-1
     res_gen[1,1]=B*RN_res[1,(1+nAssocSeries)]   #load day 1 (no residual error)
     
-    for(i in 2:ndays){
+    for(i in 2:(ndays+Nw)){
       res_gen[i,1]<-A*res_gen[(i-1),(1+nAssocSeries)]+B*RN_res[i,(1+nAssocSeries)]
     }
+    
+    res_gen=res_gen[(Nw+1):(ndays+Nw),1]
     
   }else{
     #IMPLEMENT A/B MATRIX MATHS HERE

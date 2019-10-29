@@ -29,11 +29,11 @@ gaWrapper<-function(gaArgs=NULL,        # can specify your own outside
   
   #MEMOISE YAY OR NAY - TBC
   #USER SPECIFIED PARALLEL CONTROLS
-  
+  timeStart=Sys.time()
   optpar<- ga(type = "real-valued",
               fitness=targetFinder,
-              min = modelInfo$minBound,
-              max = modelInfo$maxBound,
+              lower = modelInfo$minBound,
+              upper = modelInfo$maxBound,
               pcrossover= gaArgs$pcrossover,
               pmutation=gaArgs$pmutation,
               maxiter=gaArgs$maxiter, 
@@ -60,13 +60,15 @@ gaWrapper<-function(gaArgs=NULL,        # can specify your own outside
               wdSeries=wdSeries,      
               resid_ts=resid_ts
               )
-  
+  timeFin=Sys.time()
+  timeRun=timeFin-timeStart    #optimisation runtime
   #print(summary(optpar)$fitness)
   
   out=list(par=as.vector(optpar@solution[1,]),
            fitness=as.numeric(optpar@fitnessValue), 
            seed=simSeed,
-           opt=optpar)
+           opt=optpar,
+           runtime=timeRun)
            
   return(out)
   

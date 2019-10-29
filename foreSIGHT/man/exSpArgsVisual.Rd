@@ -54,7 +54,7 @@ exSpArgs=list(type="regGrid",
               samp=c(5,7),
               bounds=list(P_ann_tot_m=c(0.7,1.3),
                           Temp_ann_avg_m=c(-3,3)))
-windows()
+#windows()
 exSpArgsVisual(exSpArgs=exSpArgs)
 
 }

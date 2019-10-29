@@ -8,7 +8,7 @@
              climdata = NULL,
              climArgs = list(),
              simDirectory = "Simulation1",
-             IOmode="verbose"
+             IOmode="suppress"
                   )
   }
 
@@ -42,22 +42,36 @@
 \seealso{See Also: \code{\link{scenarioGenerator}}, \code{\link{performanceSpaces}} and \code{\link{quickSpace}}}
 
 \examples{
-data(tankclim)
-data(climdata2030)               ###loading climate data, can also use 2050, 2070 and 2085
+\dontrun{
+data(tankPlot)
+data(climdata2030)          #loading climate data for 2030 time slice
 
 ###Example 1
-plotArgs$title="Scenario neutral space with projections overlaid"
+# Saved from a previous example
+# tank_simpleScale_plot<-performanceSpaces(data=tank_simple_scenarios,
+#                                          plotTag = "Heat",
+#                                          plotArgs=plotArgs,
+#                                          systemModel = tankWrapper,
+#                                          systemArgs = systemArgs)
 
-plotLayers(plot=tank.plot$plotEdit,
-           plotArgs=plotArgs,
-           climdata=climdata,
-           climArgs=climArgs)
+#Create plotting arguments
+plotArgs<-list(title="Scenario neutral space with projections overlaid",
+               ylim=c(0.7,1.3),
+               xlim=c(-2,2),
+               xtitle="Temp_ann_avg_m",
+               ytitle="P_ann_tot_m")
 
-###Example 2
-climArgs$fill="Performance"
+climArgs<-list(performancelimits=NULL,
+               label=NULL,
+               slice=2030,
+               colour="black",
+               fill="performance")
 
-plotLayers(plot=tank.plot$plotEdit,
-           plotArgs=plotArgs,
-           climdata=climdata,
-           climArgs=climArgs)
+#Plot performance space with projections overlaid
+tank_overlay_plot=plotLayers(plot=tank_simpleScale_plot$plotEdit,
+                             plotArgs=plotArgs,
+                             climdata=climdata,
+                             climArgs=climArgs)
+tank_overlay_plot
+}
 }
