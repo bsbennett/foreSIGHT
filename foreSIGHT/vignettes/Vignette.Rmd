@@ -9,7 +9,7 @@ output:
     css: "vignette.css"
 vignette: >
   %\VignetteIndexEntry{foreSIGHT - an introductory tutorial in scenario-neutral climate impact assessment}
-  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEngine{knitr::rmarkdown_notangle}
   %\VignetteEncoding{UTF-8}
 
 ---
@@ -762,7 +762,7 @@ plotArgs=list(title="Scenario Neutral Space",
                legendtitle="Reliability",
                xlim=c(-2,2),
                ylim=c(0.7,1.3),
-               performancelimits=c(0.6,0.85)
+               performancelimits=c(0.6,0.85),
                xtitle="Temp_ann_avg_m",
                ytitle="P_ann_tot_m")
 
@@ -892,7 +892,7 @@ The above two sections have shown how to create an exposure space, and overlay s
 
 Any climate data to be overlaid on the space needs to be provided as a summary of the attributes. To use the former method, a system model must also be provided to simulate the resulting performance under each projection, similarly to produce a performance measure.
 
-```{r  testclim,fig.align='center',dpi=100, fig.width=7,fig.height=7,warning=FALSE,message=FALSE}
+```{r  testclim,fig.align='center',dpi=100, fig.width=7,fig.height=7,warning=FALSE,message=FALSE, eval=FALSE}
 data(tankPlot)
 data(climdata2030)          #loading climate data for 2030 time slice
 
@@ -923,7 +923,7 @@ To control the plot title, use the same *plotArgs* argument as in the previous s
 
 To control the appearance of the projection overlay, use the *climArgs* argument, which is a list like *plotArgs*. "colour" is an entry of *climArgs* used to consistently colour the projection, which defaults to black as in the above figure. However, the GCM can also be coloured by performance in the same scale as a "Heat" fill. This can be useful when trying to identify if your exposure space axes are describing enough of the system vulnerabilities. The example below shows what this looks like, with the *climArgs* "fill" set to "performance". Where there is a mismatch in the colours it suggests that other features of the climate projection are influencing the system performance beyond those used as target attributes.
 
-```{r  testclim2,fig.align='center',dpi=100, fig.width=7,fig.height=7,warning=FALSE,message=FALSE}
+```{r  testclim2,fig.align='center',dpi=100, fig.width=7,fig.height=7,warning=FALSE,message=FALSE,eval=FALSE}
 
 climArgs=list(fill="performance")
 

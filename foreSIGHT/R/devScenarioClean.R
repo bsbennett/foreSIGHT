@@ -6,6 +6,7 @@ devScenarioClean<-function(obs=NULL,
                            attHold=NULL,
                            attPenalty=NULL,
                            modelTag=NULL,
+                           modelInfoMod=list(),              # list of options for the stochastic models
                            exSpArgs=NULL, 
                            simDirectory=NULL,
                            nSeed=NULL,
@@ -50,7 +51,7 @@ devScenarioClean<-function(obs=NULL,
   #1. Read fitness files
   fitness=NULL
   for(i in 1:nRep){
-    dat=matrix(as.numeric(read.csv(file=paste0(path,"/fitness",i,".csv"),header=F)),nrow=1)
+    dat=matrix(as.numeric(utils::read.csv(file=paste0(path,"/fitness",i,".csv"),header=F)),nrow=1)
     fitness=rbind(fitness,dat)
   }
   dummy=paste0(simVar,"-fit")
@@ -59,7 +60,7 @@ devScenarioClean<-function(obs=NULL,
   #2. Read target files
   target=NULL
   for(i in 1:nRep){
-    dat=matrix(as.numeric(read.csv(file=paste0(path,"/target",i,".csv"),header=F)),nrow=1)
+    dat=matrix(as.numeric(utils::read.csv(file=paste0(path,"/target",i,".csv"),header=F)),nrow=1)
     target=rbind(target,dat)
   }
   colnames(target)=matrix(c(attPerturb,attHold,"rep","seed"),nrow=1)
@@ -67,7 +68,7 @@ devScenarioClean<-function(obs=NULL,
   #3. Read value files
   value=NULL
   for(i in 1:nRep){
-    dat=matrix(as.numeric(read.csv(file=paste0(path,"/value",i,".csv"),header=F)),nrow=1)
+    dat=matrix(as.numeric(utils::read.csv(file=paste0(path,"/value",i,".csv"),header=F)),nrow=1)
     value=rbind(value,dat)
   }
   colnames(value)=matrix(c(attPerturb,attHold,"rep","seed"),nrow=1)
@@ -75,7 +76,7 @@ devScenarioClean<-function(obs=NULL,
   #4. Read request files
   request=NULL
   for(i in 1:nRep){
-    dat=matrix(as.numeric(read.csv(file=paste0(path,"/request",i,".csv"),header=F)),nrow=1)
+    dat=matrix(as.numeric(utils::read.csv(file=paste0(path,"/request",i,".csv"),header=F)),nrow=1)
     request=rbind(request,dat)
   }
   colnames(request)=matrix(c(attPerturb,attHold,"rep","seed"),nrow=1)
@@ -83,7 +84,7 @@ devScenarioClean<-function(obs=NULL,
   #5. Read pars files
   pars=NULL
   for(i in 1:nRep){
-    dat=matrix(as.numeric(read.csv(file=paste0(path,"/pars",i,".csv"),header=F)),nrow=1)
+    dat=matrix(as.numeric(utils::read.csv(file=paste0(path,"/pars",i,".csv"),header=F)),nrow=1)
     pars=rbind(pars,dat)
   }
   #colnames(pars) 
@@ -91,7 +92,7 @@ devScenarioClean<-function(obs=NULL,
   #6. Read Scenario files
   sim=list()
   for(i in 1:nRep){
-    dat=read.csv(file=paste0(path,"/scenario",i,".csv"),header=T)
+    dat=utils::read.csv(file=paste0(path,"/scenario",i,".csv"),header=T)
     sim[[i]]=dat
   }
  
